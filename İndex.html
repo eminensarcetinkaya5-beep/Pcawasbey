@@ -163,14 +163,26 @@
             font-weight: 600;
         }
 
-        .file-item {
+        .status-card {
             background: rgba(255,255,255,0.05);
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .btn {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -192,15 +204,18 @@
 
     <div id="pcWindow" class="window">
         <div class="window-header">
-            <div class="window-title"><i class="fa-solid fa-desktop"></i> Sistem - [By: AwasBey]</div>
+            <div class="window-title"><i class="fa-solid fa-desktop"></i> PC Durumu - [By: AwasBey]</div>
             <div class="window-controls"><i class="fa-solid fa-xmark" onclick="closeWindow('pcWindow')"></i></div>
         </div>
         <div class="window-body">
-            <p style="margin-bottom: 12px;">Bağlı Cihaz Durumu:</p>
-            <div class="file-item">
-                <span><i class="fa-solid fa-circle-check" style="color: #22c55e;"></i> Arka Plan Servisi</span>
-                <small>Aktif</small>
+            <div class="status-card">
+                <span><i class="fa-solid fa-network-wired"></i> PC Köprü Bağlantısı:</span>
+                <strong id="pcStatus" style="color: #ef4444;">Kontrol Ediliyor...</strong>
             </div>
+
+            <button class="btn" onclick="checkPCConnection()">PC Bağlantısını Sına</button>
+
+            <div id="drivesBox" style="margin-top: 15px;"></div>
         </div>
     </div>
 
@@ -224,12 +239,49 @@
     <script>
         function openWindow(id) { document.getElementById(id).style.display = 'flex'; }
         function closeWindow(id) { document.getElementById(id).style.display = 'none'; }
+
+        async function checkPCConnection() {
+            const statusEl = document.getElementById('pcStatus');
+            statusEl.innerText = "Bağlanıyor...";
+            statusEl.style.color = "#eab308";
+
+            try {
+                const res = await fetch('http://localhost:8080/ping');
+                const data = await res.json();
+                if (data.online) {
+                    statusEl.innerText = "Online (Bağlandı)";
+                    statusEl.style.color = "#22c55e";
+                    getDrives();
+                }
+            } catch (err) {
+                statusEl.innerText = "Offline (PC Servisi Kapalı)";
+                statusEl.style.color = "#ef4444";
+            }
+        }
+
+        async function getDrives() {
+            try {
+                const res = await fetch('http://localhost:8080/get-drives');
+                const drives = await res.json();
+                let html = '<p style="margin-bottom:8px; font-weight:bold;">Gerçek Sürücüler:</p>';
+                drives.forEach(d => {
+                    html += `<div class="status-card">
+                        <span><i class="fa-solid fa-hard-drive"></i> ${d.name}</span>
+                        <small>Boş: ${d.freeGB} GB / Toplam: ${d.totalGB} GB</small>
+                    </div>`;
+                });
+                document.getElementById('drivesBox').innerHTML = html;
+            } catch(e){}
+        }
+
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
         }
+
         setInterval(updateClock, 1000);
         updateClock();
+        checkPCConnection();
     </script>
 </body>
 </html>
